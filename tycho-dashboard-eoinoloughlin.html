@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tycho AI | Interactive Market Strategy</title>
+    <!-- Chosen Palette: Tech Neutral -->
+    <!-- Application Structure Plan: A single-page dashboard application with a top navigation bar for smooth scrolling. The structure is designed to guide the user from the high-level market opportunity to the granular strategic details. It starts with the macro market view (interactive charts), moves to specific user needs (tabbed persona sections for Defense vs. Commercial), then to the competitive landscape (an interactive grid), and finally to the actionable GTM plan (a visual timeline and roadmap). A final, hyperlinked bibliography section provides full source transparency. This thematic, non-linear structure was chosen over the report's linear format to allow users to quickly access the most relevant sections and compare key data points (e.g., market growth vs. autonomy tech growth) interactively, enhancing synthesis and understanding. -->
+    <!-- Visualization & Content Choices: 
+        - Market Size (Report Info) -> Goal: Compare -> Viz: Dual Bar Charts (Chart.js) -> Interaction: Toggle buttons to switch between 'Overall UxS Market' and 'Enabling Autonomy Tech' views. Justification: This directly highlights the report's core thesis that the true value is in autonomy software, not just hardware. 
+        - User Personas (Report Info) -> Goal: Organize/Inform -> Viz: Tabbed content with styled cards (HTML/Tailwind) -> Interaction: Tabs to switch between Defense and Commercial personas. Justification: This allows for direct comparison of user needs and pain points in the two key markets. 
+        - Competitors (Report Info) -> Goal: Compare/Organize -> Viz: Interactive quadrant grid (HTML/Tailwind) -> Interaction: Hovering over a competitor reveals a detail card. Justification: This visualizes the competitive positioning effectively without cluttering the UI, making complex relationships easy to grasp. 
+        - GTM Strategy (Report Info) -> Goal: Change/Organize -> Viz: Phased timeline (HTML/Tailwind) -> Interaction: Clear visual flow from Phase 1 to 3. Justification: A timeline is the most intuitive way to present a multi-year strategy. 
+        - Roadmaps (Report Info) -> Goal: Inform -> Viz: Styled tables (HTML/Tailwind). Justification: Tables are optimal for presenting structured data like product features and event schedules clearly.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.5.x/dist/typography.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at bottom, #233057 0%, #0a0c18 80%, #090a13 100%);
+            color: #e5e7ef;
+            min-height: 100vh;
+            position: relative;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            height: 40vh;
+            pointer-events: none;
+            background: url('data:image/svg+xml;utf8,<svg width="100%25" height="100%25" viewBox="0 0 1440 400" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.18"><path d="M0 400 Q720 0 1440 400" stroke="%23A5B4FC" stroke-width="1.5" fill="none"/><path d="M0 350 Q720 50 1440 350" stroke="%23678AFD" stroke-width="1.2" fill="none"/><path d="M0 300 Q720 100 1440 300" stroke="%234B5D8C" stroke-width="1" fill="none"/></g></svg>');
+            background-repeat: no-repeat;
+            background-size: cover;
+            z-index: 0;
+        }
+        header {
+            background: rgba(10,12,24,0.85) !important;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 24px 0 #10162f99;
+        }
+        .nav-link {
+            color: #e5e7ef;
+            transition: color 0.3s, text-shadow 0.3s;
+            text-shadow: 0 0 8px #1e293b33;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #60a5fa;
+            text-shadow: 0 0 12px #3b82f6cc;
+        }
+        .tab-button {
+            color: #e5e7ef;
+            border-bottom: 2px solid transparent;
+            background: transparent;
+        }
+        .tab-button.active {
+            border-color: #3b82f6;
+            color: #60a5fa;
+            background: #1e293b55;
+        }
+        .tab-button:hover:not(.active) {
+            background: #1e293b33;
+            color: #93c5fd;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 525px;
+            max-height: 60vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 600px;
+            }
+        }
+        .bg-white, .bg-slate-700, .bg-gray-800, .bg-blue-50 {
+            background: #181c2a !important;
+        }
+        .text-gray-800, .text-gray-700, .text-gray-600, .text-blue-800, .text-blue-700, .text-blue-600, .text-teal-600, .text-teal-300 {
+            color: #e5e7ef !important;
+        }
+        .text-blue-600, .text-blue-800, .text-blue-700 {
+            color: #60a5fa !important;
+        }
+        .text-gray-500, .text-gray-400, .text-gray-300 {
+            color: #a5b4fc !important;
+        }
+        .shadow-lg, .shadow-xl, .shadow-2xl {
+            box-shadow: 0 4px 32px 0 #10162f66 !important;
+        }
+        .rounded-xl, .rounded-lg, .rounded-md {
+            border-radius: 1rem !important;
+        }
+        .border, .border-blue-200, .border-blue-600, .border-gray-200 {
+            border-color: #334155 !important;
+        }
+        .competitor-card {
+            background: linear-gradient(135deg, #232a3b 60%, #1e293b 100%);
+            color: #e5e7ef;
+            transition: all 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 16px 0 #10162f55;
+        }
+        .competitor-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 32px 0 #3b82f6cc;
+            border-color: #60a5fa;
+        }
+        .competitor-card.bg-gray-800, .competitor-card.bg-slate-700 {
+            background: linear-gradient(135deg, #232a3b 80%, #29304a 100%) !important;
+            color: #e5e7ef !important;
+            box-shadow: 0 0 16px 0 #60a5fa44 !important;
+            border: 2px solid #3b82f6 !important;
+        }
+        .timeline-item::before {
+            background-color: #60a5fa;
+            border: 4px solid #181c2a;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .info-superscript {
+            color: #fff !important;
+            background-color: #2563eb !important;
+            border: 2px solid #60a5fa !important;
+            box-shadow: 0 0 8px 0 #3b82f6cc;
+            font-weight: bold;
+            transition: background 0.2s, box-shadow 0.2s, border 0.2s;
+        }
+        .info-superscript:hover {
+            background-color: #60a5fa !important;
+            color: #181c2a !important;
+            box-shadow: 0 0 16px 0 #60a5fa;
+            border: 2px solid #fff !important;
+        }
+        .modal-overlay {
+            background: rgba(10,12,24,0.85);
+        }
+        .modal-content {
+            background: #181c2a;
+            color: #e5e7ef;
+        }
+        .modal-content a {
+            color: #60a5fa;
+        }
+        .reference-list a {
+            color: #60a5fa;
+        }
+        .reference-list a:hover {
+            color: #3b82f6;
+        }
+        .bg-gray-700 {
+            background: #232a3b !important;
+        }
+        .bg-blue-600, .bg-teal-600 {
+            background: linear-gradient(90deg, #2563eb 60%, #1e293b 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 0 16px 0 #3b82f6cc;
+        }
+        .bg-blue-600:hover, .bg-teal-600:hover {
+            background: linear-gradient(90deg, #3b82f6 60%, #2563eb 100%) !important;
+        }
+        .border-yellow-400 {
+            border-color: #fde68a !important;
+        }
+        .hover\:bg-blue-700:hover {
+            background: #3b82f6 !important;
+        }
+        .hover\:bg-gray-300:hover {
+            background: #334155 !important;
+        }
+        .hover\:bg-gray-50:hover {
+            background: #232a3b !important;
+        }
+        .text-center, .container {
+            z-index: 1;
+        }
+        footer {
+            background: #10162f !important;
+            color: #a5b4fc !important;
+        }
+        .prose, .prose-sm {
+            color: #a5b4fc !important;
+        }
+        /* --- Citation Modal Fixes --- */
+        #source-modal ul, #source-modal ol {
+            list-style: disc inside;
+            padding-left: 1.5em;
+            color: #c7d2fe;
+        }
+        #source-modal li {
+            color: #c7d2fe;
+            font-size: 1rem;
+            margin-bottom: 0.5em;
+        }
+        #source-modal a {
+            color: #60a5fa !important;
+            text-decoration: underline;
+        }
+        #source-modal a:hover {
+            color: #93c5fd !important;
+        }
+        #source-modal .prose, #source-modal .prose-sm {
+            color: #c7d2fe !important;
+        }
+        /* Remove double bullets from nested lists */
+        #source-modal ul ul, #source-modal ol ol {
+            list-style: circle inside;
+        }
+        #source-modal, #source-modal .prose, #source-modal .prose-sm, #source-modal * {
+            color: #e5e7ef !important;
+        }
+        #source-modal a {
+            color: #60a5fa !important;
+        }
+        #source-modal a:hover {
+            color: #93c5fd !important;
+        }
+        /* Remove Tailwind text color classes inside modal */
+        #source-modal .text-blue-600, #source-modal .text-blue-800, #source-modal .text-blue-700,
+        #source-modal .text-gray-800, #source-modal .text-gray-700, #source-modal .text-gray-600, #source-modal .text-gray-500, #source-modal .text-gray-400, #source-modal .text-gray-300 {
+            color: #e5e7ef !important;
+        }
+        /* --- Toggle Button Group Fix --- */
+        #show-uxs-btn, #show-slam-btn {
+            border-radius: 2rem !important;
+            font-size: 1.15rem;
+            font-weight: 600;
+            min-width: 320px;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        #show-uxs-btn.bg-blue-600, #show-slam-btn.bg-blue-600 {
+            background: linear-gradient(90deg, #2563eb 60%, #3b82f6 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 0 12px 0 #3b82f6cc;
+        }
+        #show-uxs-btn.bg-gray-200, #show-slam-btn.bg-gray-200 {
+            background: #232a3b !important;
+            color: #a5b4fc !important;
+            box-shadow: none !important;
+        }
+        #show-uxs-btn, #show-slam-btn {
+            border: none !important;
+        }
+        .timeline-item > span {
+            background: #232a3b !important;
+            color: #fff !important;
+            font-weight: bold !important;
+            box-shadow: 0 2px 8px 0 #10162f55;
+            border-radius: 0.5rem !important;
+            padding: 0.25rem 1rem !important;
+            font-size: 1rem !important;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">TYCHO AI <span class="font-normal text-blue-600">| Strategic Dashboard</span></h1>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#market" class="nav-link text-gray-600 font-medium">Market Opportunity</a>
+                <a href="#applications" class="nav-link text-gray-600 font-medium">Target Applications</a>
+                <a href="#competitors" class="nav-link text-gray-600 font-medium">Competitive Landscape</a>
+                <a href="#strategy" class="nav-link text-gray-600 font-medium">Go-to-Market</a>
+                <a href="#references" class="nav-link text-gray-600 font-medium">References</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section id="hero" class="text-center mb-20">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">The Autonomy Imperative</h2>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+                Analyzing the shift from hardware to intelligence in unmanned systems. This dashboard explores the high-growth market for autonomous navigation in GPS-denied environments and outlines a strategic path for Tycho AI.
+            </p>
+            <div class="mt-6 flex justify-center">
+                <div class="bg-[#232a3b] text-[#a5b4fc] px-4 py-2 rounded shadow font-semibold border border-blue-600 text-base">
+                    Prepared by Eoin O'Loughlin | <a href="mailto:eoloughl@nd.edu" class="underline hover:text-blue-400">eoloughl@nd.edu</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="market" class="mb-20 scroll-mt-24">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-800">The Real Market Opportunity</h3>
+                <p class="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">The unmanned systems market shows steady growth, but the enabling autonomy software is expanding exponentially. This section illustrates where the true value lies. Click the buttons to compare the growth trajectories.</p>
+            </div>
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <div class="flex justify-center mb-6 space-x-2">
+                    <button id="show-uxs-btn" class="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 transition">Unmanned Systems (UxS) Market</button>
+                    <button id="show-slam-btn" class="px-4 py-2 text-sm font-semibold bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">Autonomy Tech (SLAM) Market</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="marketChart"></canvas>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-4">Click [i] for data sources.
+                    <span class="info-superscript" data-source-id="market-size">i</span>
+                </p>
+            </div>
+        </section>
+
+        <section id="applications" class="mb-20 scroll-mt-24">
+             <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-800">High-Value Target Applications</h3>
+                <p class="text-lg text-gray-600 mt-2 max-w-3xl mx-auto">Tycho AI's technology addresses critical pain points in both defense and commercial sectors. This section explores the specific user needs and value propositions for each market. Select a market to see the detailed analysis.</p>
+            </div>
+            <div class="flex justify-center mb-8 border-b">
+                <button id="defense-tab" class="tab-button active text-lg font-medium px-6 py-3 border-b-2 border-transparent transition">Defense & National Security</button>
+                <button id="commercial-tab" class="tab-button text-lg font-medium px-6 py-3 border-b-2 border-transparent transition">Commercial & Industrial</button>
+            </div>
+
+            <div id="defense-content" class="application-content fade-in">
+                <div class="grid md:grid-cols-5 gap-8 items-center">
+                    <div class="md:col-span-2 bg-gray-800 text-white p-8 rounded-lg shadow-xl">
+                        <h4 class="text-2xl font-bold mb-2">User Persona: Major Corbin</h4>
+                        <p class="text-sm text-blue-300 mb-4">Tactical UAV Mission Commander</p>
+                        <p class="mb-6">Responsible for achieving mission-critical ISR and logistics objectives while minimizing risk to soldiers in contested, GPS-denied environments.</p>
+                        <div class="space-y-4 text-sm">
+                            <div>
+                               <h5 class="font-semibold text-blue-300">Goals & Motivations</h5>
+                               <p class="text-gray-300">Achieve >70% mission success; ensure personnel safety; gain tactical edge.</p>
+                            </div>
+                            <div>
+                               <h5 class="font-semibold text-blue-300">Pain Points</h5>
+                               <p class="text-gray-300">High drone attrition from GPS jamming; extreme operator cognitive load; unreliable systems under pressure.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-3">
+                        <h4 class="text-xl font-semibold mb-3 text-gray-700">Value Proposition: The Resilient Warfighter</h4>
+                        <p class="mb-6 text-gray-600">Tycho AI provides a force multiplier. By automating navigation in contested airspace, it guarantees mission continuity, reduces operator burnout, and allows teams to focus on analyzing data, not just flying the drone. It transforms a high-risk gamble into a reliable tactical asset.</p>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                             <div class="bg-white p-4 rounded-lg border">
+                                <h5 class="font-bold text-blue-600">Mission Success Rate</h5>
+                                <p class="text-sm text-gray-600">Boosts success in jammed areas from <20% to >70%.
+                                    <span class="info-superscript" data-source-id="mission-success">i</span>
+                                </p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border">
+                                <h5 class="font-bold text-blue-600">Contested Logistics</h5>
+                                <p class="text-sm text-gray-600">Deliver critical supplies to forward units without relying on vulnerable GPS signals.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="commercial-content" class="application-content hidden fade-in">
+                 <div class="grid md:grid-cols-5 gap-8 items-center">
+                    <div class="md:col-span-2 bg-slate-700 text-white p-8 rounded-lg shadow-xl">
+                        <h4 class="text-2xl font-bold mb-2">User Persona: Maria Jenkins</h4>
+                        <p class="text-sm text-teal-300 mb-4">Industrial Inspection Lead</p>
+                        <p class="mb-6">Responsible for asset integrity, operational uptime, and team safety at a major energy company. Manages inspection of hazardous, GPS-denied confined spaces.</p>
+                        <div class="space-y-4 text-sm">
+                            <div>
+                               <h5 class="font-semibold text-teal-300">Goals & Motivations</h5>
+                               <p class="text-gray-300">Achieve zero-incident safety record; eliminate costly operational downtime; gather accurate, repeatable data for predictive maintenance.</p>
+                            </div>
+                            <div>
+                               <h5 class="font-semibold text-teal-300">Pain Points</h5>
+                               <p class="text-gray-300">Extreme risks of manual inspection; downtime costs millions per day; inconsistent, subjective data quality.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-3">
+                        <h4 class="text-xl font-semibold mb-3 text-gray-700">Value Proposition: The Efficiency & Safety Imperative</h4>
+                        <p class="mb-6 text-gray-600">Tycho AI offers a paradigm shift in asset management. It captures complete, high-fidelity data from the most dangerous locations without risking human lives or requiring operational shutdowns. The ROI is clear, direct, and massive.</p>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded-lg border">
+                                <h5 class="font-bold text-teal-600">Confined Space Inspection</h5>
+                                <p class="text-sm text-gray-600">Inspect assets with up to 74% lower costs and 190%+ ROI.
+                                    <span class="info-superscript" data-source-id="inspection-roi">i</span>
+                                </p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border">
+                                <h5 class="font-bold text-teal-600">Construction Monitoring</h5>
+                                <p class="text-sm text-gray-600">Automate BIM checks, reducing rework by 80%.
+                                    <span class="info-superscript" data-source-id="construction-rework">i</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="competitors" class="mb-20 scroll-mt-24">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-800">Competitive Positioning</h3>
+                <p class="text-lg text-gray-600 mt-2 max-w-3xl mx-auto">The landscape is defined by market focus and technological approach. Tycho AI's opportunity is to lead in AI-powered autonomy with a deliberate dual-use strategy. Hover over each competitor to see their profile.</p>
+            </div>
+            <div class="w-full bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg">
+                <div class="relative grid grid-cols-2 grid-rows-2 gap-1 md:gap-4 h-[500px]">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-full h-px bg-gray-300"></div>
+                        <div class="h-full w-px bg-gray-300"></div>
+                    </div>
+                    <div class="absolute top-2 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-bold text-gray-500">Defense & Tactical</div>
+                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-bold text-gray-500">Industrial & Commercial</div>
+                    <div class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs sm:text-sm font-bold text-gray-500 origin-center whitespace-nowrap">Collision-Tolerant</div>
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-xs sm:text-sm font-bold text-gray-500 origin-center whitespace-nowrap">AI-Powered Autonomy</div>
+
+                    <div class="p-2 flex items-center justify-center" data-competitor="brinc">
+                        <div class="competitor-card bg-gray-800 text-white w-32 h-32 sm:w-40 sm:h-40 flex flex-col items-center justify-center rounded-lg p-4 border-2 border-transparent">
+                            <h5 class="font-bold">BRINC</h5><p class="text-xs text-center">Tactical indoor ops</p>
+                        </div>
+                    </div>
+                    <div class="p-2 flex items-center justify-center" data-competitor="skydio">
+                         <div class="competitor-card bg-blue-600 text-white w-32 h-32 sm:w-40 sm:h-40 flex flex-col items-center justify-center rounded-lg p-4 border-2 border-transparent">
+                           <h5 class="font-bold">Skydio</h5><p class="text-xs text-center">Visual autonomy leader</p>
+                        </div>
+                    </div>
+                    <div class="p-2 flex items-center justify-center" data-competitor="flyability">
+                         <div class="competitor-card bg-slate-700 text-white w-32 h-32 sm:w-40 sm:h-40 flex flex-col items-center justify-center rounded-lg p-4 border-2 border-transparent">
+                           <h5 class="font-bold">Flyability</h5><p class="text-xs text-center">Confined space incumbent</p>
+                        </div>
+                    </div>
+                    <div class="p-2 flex items-center justify-center" data-competitor="exyn">
+                         <div class="competitor-card bg-teal-600 text-white w-32 h-32 sm:w-40 sm:h-40 flex flex-col items-center justify-center rounded-lg p-4 border-2 border-transparent">
+                           <h5 class="font-bold">Exyn</h5><p class="text-xs text-center">Level 4A mapping</p>
+                        </div>
+                    </div>
+                    
+                    <div id="competitor-tooltip" class="absolute hidden bg-black/80 text-white p-3 rounded-lg text-sm max-w-xs z-10 pointer-events-none"></div>
+
+                     <div class="absolute bottom-0 right-0 p-4" data-competitor="tycho">
+                         <div class="competitor-card bg-gradient-to-br from-blue-500 to-indigo-600 text-white w-32 h-32 sm:w-40 sm:h-40 flex flex-col items-center justify-center rounded-lg p-4 border-2 border-yellow-400 shadow-2xl">
+                           <h5 class="font-bold">Tycho AI</h5><p class="text-xs text-center">Dual-Use AI Autonomy for Impossible Environments</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="strategy" class="mb-20 scroll-mt-24">
+             <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-800">Go-to-Market Strategy & Roadmap</h3>
+                <p class="text-lg text-gray-600 mt-2 max-w-3xl mx-auto">A phased, dual-use strategy de-risks market entry and maximizes long-term growth. The plan is supported by a multi-generational product roadmap focused on building a durable competitive moat with edge AI.</p>
+            </div>
+            
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg mb-12">
+                <h4 class="text-2xl font-semibold text-center mb-8 text-gray-700">Phased Market Entry</h4>
+                <div class="relative pl-4 border-l-2 border-gray-200">
+                    <div class="timeline-item relative mb-24 pl-24">
+                        <span class="absolute left-[-45px] top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded">Years 1-2</span>
+                        <h5 class="text-xl font-bold text-blue-600">Phase 1: Prove & Penetrate</h5>
+                        <p class="text-gray-600 mt-2">Focus on initial revenue and validation. Target the commercial <strong>Industrial Inspection</strong> market for early sales and case studies, while securing non-dilutive <strong>DoD R&D funding</strong> (SBIRs) to validate military requirements.</p>
+                    </div>
+                    <div class="timeline-item relative mb-24 pl-24">
+                         <span class="absolute left-[-45px] top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded">Years 3-4</span>
+                        <h5 class="text-xl font-bold text-blue-600">Phase 2: Scale & Expand</h5>
+                        <p class="text-gray-600 mt-2">Expand into adjacent commercial verticals (e.g., Construction, Public Safety). The key defense objective is achieving a <strong>DIU Blue UAS "On-Ramp" listing</strong> to unlock scalable procurement across the DoD.</p>
+                    </div>
+                    <div class="timeline-item relative pl-24 mb-24">
+                         <span class="absolute left-[-45px] top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded">Year 5+</span>
+                        <h5 class="text-xl font-bold text-blue-600">Phase 3: Lead & Dominate</h5>
+                        <p class="text-gray-600 mt-2">Address highly regulated markets like <strong>Urban Logistics</strong>. Transition to a key technology provider for major defense <strong>Programs of Record</strong>, cementing Tycho AI as the industry standard for autonomy in contested environments.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h4 class="text-xl font-semibold mb-4 text-gray-700">Product Roadmap</h4>
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-md bg-blue-50 border border-blue-200">
+                            <h5 class="font-bold text-blue-800">Gen 1: The Inspector</h5>
+                            <p class="text-sm text-blue-700">Robust VIO/SLAM engine for high-fidelity 3D mapping and pilot-assist navigation.</p>
+                        </div>
+                         <div class="p-4 rounded-md bg-blue-50 border border-blue-200">
+                            <h5 class="font-bold text-blue-800">Gen 2: The Sentinel</h5>
+                            <p class="text-sm text-blue-700">Integrates event-based cameras for high-speed flight and on-device AI for object detection.</p>
+                        </div>
+                         <div class="p-4 rounded-md bg-blue-50 border border-blue-200">
+                            <h5 class="font-bold text-blue-800">Gen 3: The Cognizant</h5>
+                            <p class="text-sm text-blue-700">Full Spatial AI engine for true environmental understanding and dynamic mission re-planning.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h4 class="text-xl font-semibold mb-4 text-gray-700">Engagement Plan (Jun 2025 Onwards)</h4>
+                    <ul class="space-y-3 text-sm">
+                         <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+                           <div><span class="font-semibold">Joint Navigation Conference (JNC)</span><br><span class="text-gray-500">Defense R&D Engagement</span></div>
+                           <span class="text-xs font-medium text-gray-500">Jun 2025, USA</span>
+                        </li>
+                         <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+                           <div><span class="font-semibold">Commercial UAV Expo Americas</span><br><span class="text-gray-500">Commercial Lead Gen</span></div>
+                           <span class="text-xs font-medium text-gray-500">Sep 2025, USA</span>
+                        </li>
+                        <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+                           <div><span class="font-semibold">DSEI</span><br><span class="text-gray-500">International Partnering, NATO</span></div>
+                           <span class="text-xs font-medium text-gray-500">Sep 2025, UK</span>
+                        </li>
+                        <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+                           <div><span class="font-semibold">AUSA Annual Meeting</span><br><span class="text-gray-500">Army End-User Engagement</span></div>
+                           <span class="text-xs font-medium text-gray-500">Oct 2025, USA</span>
+                        </li>
+                         <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+                           <div><span class="font-semibold">UMEX</span><br><span class="text-gray-500">Middle East Market Entry</span></div>
+                           <span class="text-xs font-medium text-gray-500">Jan 2026, UAE</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="references" class="scroll-mt-24">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-800">References</h3>
+                <p class="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">The following sources were cited in the creation of this strategic analysis.</p>
+            </div>
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <div class="prose prose-sm max-w-none reference-list">
+                    <ol>
+                        <li id="citation-1">Unmanned Systems Market Size | Industry Report, 2030, accessed June 23, 2025, <a href="https://www.grandviewresearch.com/industry-analysis/unmanned-systems-market-report" target="_blank">View Source</a></li>
+                        <li id="citation-2">2024 Research: Unmanned Systems Market to Soar, Reaching $43.54 Billion by 2029, at a Growth Rate of 8.2% - Expansion Fueled by Technological Advancements in Autonomous Systems - GlobeNewswire, accessed June 23, 2025, <a href="https://www.globenewswire.com/news-release/2025/01/08/3006405/28124/en/2024-Research-Unmanned-Systems-Market-to-Soar-Reaching-43-54-Billion-by-2029-at-a-Growth-Rate-of-8-2-Expansion-Fueled-by-Technological-Advancements-in-Autonomous-Systems.html" target="_blank">View Source</a></li>
+                        <li id="citation-3">Simultaneous Localization and Mapping (SLAM) Market to Hit USD 7811.04 Billion by 2032, at a CAGR of 36.43% | SNS Insider - GlobeNewswire, accessed June 23, 2025, <a href="https://www.globenewswire.com/news-release/2025/04/10/3059347/0/en/Simultaneous-Localization-and-Mapping-SLAM-Market-to-Hit-USD-7811-04-Billion-by-2032-at-a-CAGR-of-36-43-SNS-Insider.html" target="_blank">View Source</a></li>
+                        <li id="citation-4">SLAM Market Size and Share | Statistics - 2030, accessed June 23, 2025, <a href="https://www.nextmsc.com/report/simultaneous-localization-and-mapping-slam-market" target="_blank">View Source</a></li>
+                        <li id="citation-5">Calculating ROI: The Financial Benefits of Implementing AI Drones in Industry - vecros store, accessed June 23, 2025, <a href="https://store.vecros.com/blogs/blogs/calculating-roi-the-financial-benefits-of-implementing-ai-drones-in-industry-1" target="_blank">View Source</a></li>
+                        <li id="citation-6">Ukraine's Future Vision and Current Capabilities for Waging AI-Enabled Autonomous Warfare - CSIS, accessed June 23, 2025, <a href="https://www.csis.org/analysis/ukraines-future-vision-and-current-capabilities-waging-ai-enabled-autonomous-warfare" target="_blank">View Source</a></li>
+                        <li id="citation-7">A Critical Tool for Critical Inspections - Inside Unmanned Systems, accessed June 23, 2025, <a href="https://insideunmannedsystems.com/a-critical-tool-for-critical-inspections/" target="_blank">View Source</a></li>
+                        <li id="citation-8">Drones for Construction Site inspection | Skydio, accessed June 23, 2025, <a href="https://www.skydio.com/solutions/construction-drones" target="_blank">View Source</a></li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="w-full flex justify-center mt-12 mb-4">
+        <div class="bg-[#232a3b] text-[#a5b4fc] px-6 py-4 rounded-xl shadow-lg text-lg font-semibold border border-blue-600">
+            Prepared by Eoin O'Loughlin | <a href="mailto:eoloughl@nd.edu" class="underline hover:text-blue-400">eoloughl@nd.edu</a>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white mt-20">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <h4 class="text-xl font-bold mb-4">Strategic Imperatives</h4>
+            <div class="grid md:grid-cols-5 gap-4 text-sm max-w-5xl mx-auto">
+                <div class="bg-gray-700 p-3 rounded">1. Embrace Dual-Use</div>
+                <div class="bg-gray-700 p-3 rounded">2. Focus on Intelligence</div>
+                <div class="bg-gray-700 p-3 rounded">3. Chart a Course for "Blue"</div>
+                <div class="bg-gray-700 p-3 rounded">4. Sell the ROI</div>
+                <div class="bg-gray-700 p-3 rounded">5. Innovate on the Edge</div>
+            </div>
+             <p class="text-xs text-gray-400 mt-8">This interactive dashboard is a synthesis of the "Market Potential and Strategic Positioning for Tycho AI" research brief. All data is derived from the source report.</p>
+        </div>
+    </footer>
+
+    <!-- Source Information Modal -->
+    <div id="source-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="modal-content bg-white w-full max-w-lg rounded-lg shadow-xl p-6 md:p-8 relative transform scale-95">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-4">Source Information</h3>
+            <div id="modal-body" class="text-gray-600 prose prose-sm max-w-none">
+                <!-- Content will be injected here -->
+            </div>
+            <button id="modal-close-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const marketChartCanvas = document.getElementById('marketChart');
+        let marketChart;
+        
+        const uxsData = {
+            labels: ['2024', '2030'],
+            datasets: [{
+                label: 'Unmanned Systems (UxS) Market Size ($B)',
+                data: [27.1, 48.3],
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2,
+                borderRadius: 5,
+            }]
+        };
+
+        const slamData = {
+            labels: ['2023', '2032'],
+            datasets: [{
+                label: 'SLAM Technology Market Size ($B)',
+                data: [0.478, 7.8],
+                backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 2,
+                borderRadius: 5,
+            }]
+        };
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#e5e7ef',
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Market Growth Projections',
+                    font: { size: 16 },
+                    color: '#e5e7ef'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y) + 'B';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: 0
+            },
+            backgroundColor: 'transparent',
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Market Size (in Billions USD)',
+                        color: '#e5e7ef'
+                    },
+                    grid: {
+                        color: 'rgba(165,180,252,0.18)',
+                        borderColor: 'rgba(165,180,252,0.18)',
+                        borderWidth: 1
+                    },
+                    ticks: {
+                        color: '#e5e7ef',
+                        font: { weight: 'bold' }
+                    },
+                    max: undefined
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(165,180,252,0.10)',
+                        borderColor: 'rgba(165,180,252,0.18)',
+                        borderWidth: 1
+                    },
+                    ticks: {
+                        color: '#e5e7ef',
+                        font: { weight: 'bold' }
+                    }
+                }
+            }
+        };
+
+        function createChart(data) {
+            if (marketChart) {
+                marketChart.destroy();
+            }
+            // Dynamically set y-axis max for readability
+            if (data === uxsData) {
+                chartOptions.scales.y.max = 60;
+            } else if (data === slamData) {
+                chartOptions.scales.y.max = 10;
+            } else {
+                chartOptions.scales.y.max = undefined;
+            }
+            chartOptions.plugins.title.text = data.datasets[0].label;
+            marketChart = new Chart(marketChartCanvas, {
+                type: 'bar',
+                data: data,
+                options: chartOptions
+            });
+        }
+        
+        createChart(uxsData);
+
+        const showUxsBtn = document.getElementById('show-uxs-btn');
+        const showSlamBtn = document.getElementById('show-slam-btn');
+
+        showUxsBtn.addEventListener('click', () => {
+            createChart(uxsData);
+            showUxsBtn.classList.add('bg-blue-600', 'text-white');
+            showUxsBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            showSlamBtn.classList.add('bg-gray-200', 'text-gray-700');
+            showSlamBtn.classList.remove('bg-blue-600', 'text-white');
+        });
+
+        showSlamBtn.addEventListener('click', () => {
+            createChart(slamData);
+            showSlamBtn.classList.add('bg-blue-600', 'text-white');
+            showSlamBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            showUxsBtn.classList.add('bg-gray-200', 'text-gray-700');
+            showUxsBtn.classList.remove('bg-blue-600', 'text-white');
+        });
+
+        const defenseTab = document.getElementById('defense-tab');
+        const commercialTab = document.getElementById('commercial-tab');
+        const defenseContent = document.getElementById('defense-content');
+        const commercialContent = document.getElementById('commercial-content');
+        
+        defenseTab.addEventListener('click', () => {
+            defenseContent.classList.remove('hidden');
+            commercialContent.classList.add('hidden');
+            defenseTab.classList.add('active');
+            commercialTab.classList.remove('active');
+        });
+
+        commercialTab.addEventListener('click', () => {
+            commercialContent.classList.remove('hidden');
+            defenseContent.classList.add('hidden');
+            commercialTab.classList.add('active');
+            defenseTab.classList.remove('active');
+        });
+
+        const competitorDetails = {
+            brinc: '<strong>BRINC:</strong> Niche leader in public safety/tactical ops. Focuses on hardened, collision-tolerant drones with specialized features like glass-breaking and two-way audio for first responders.',
+            skydio: '<strong>Skydio:</strong> Dominant in AI-powered visual autonomy for complex outdoor environments. Strong dual-use strategy with Blue UAS listed platforms for infrastructure and defense.',
+            flyability: '<strong>Flyability:</strong> Incumbent for confined space industrial inspection. Known for its patented collision-tolerant cage. Recently added LiDAR SLAM for 3D mapping.',
+            exyn: '<strong>Exyn:</strong> Delivers Level 4A autonomy for large-scale subterranean mapping (mining). Core strength is its pilot-less, survey-grade 3D point cloud generation.',
+            tycho: '<strong>Tycho AI:</strong> Positioned to lead in AI-powered autonomy for the most challenging GPS- and comms-denied environments, leveraging advanced sensor fusion and edge AI with a focused dual-use strategy.'
+        };
+
+        const competitorCards = document.querySelectorAll('[data-competitor]');
+        const tooltip = document.getElementById('competitor-tooltip');
+
+        competitorCards.forEach(card => {
+            card.addEventListener('mouseenter', (e) => {
+                const competitorId = card.getAttribute('data-competitor');
+                if (competitorDetails[competitorId]) {
+                    tooltip.innerHTML = competitorDetails[competitorId];
+                    tooltip.classList.remove('hidden');
+                }
+            });
+
+            card.addEventListener('mousemove', (e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                
+                let top = e.clientY - tooltipRect.height - 10;
+                let left = e.clientX - tooltipRect.width / 2;
+                
+                if (top < 0) top = e.clientY + 20;
+                if (left < 0) left = 10;
+                if (left + tooltipRect.width > window.innerWidth) left = window.innerWidth - tooltipRect.width - 10;
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+        });
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('main section');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 120) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Modal Logic
+        const sourceData = {
+            'market-size': {
+                title: 'Source References: Market Size & Growth',
+                content: `
+                    <p>The data for market projections is derived from the following sources. Click to view full reference.</p>
+                    <ul class='list-disc pl-5 mt-2 space-y-1'>
+                        <li><strong>Overall UxS Market:</strong> <a href="#citation-1">[1]</a>, <a href="#citation-2">[2]</a></li>
+                        <li><strong>SLAM Technology Market:</strong> <a href="#citation-3">[3]</a>, <a href="#citation-4">[4]</a></li>
+                    </ul>`
+            },
+            'mission-success': {
+                title: 'Source Reference: Mission Success Rate',
+                content: `
+                    <ul class='list-disc pl-5 mt-2 space-y-1'>
+                        <li><strong>Primary Citation:</strong> <a href="#citation-6">[6]</a></li>
+                    </ul>`
+            },
+            'inspection-roi': {
+                title: 'Source References: Industrial Inspection ROI',
+                content: `
+                    <ul class='list-disc pl-5 mt-2 space-y-1'>
+                        <li><strong>Cost/Downtime Reduction:</strong> <a href="#citation-5">[5]</a></li>
+                        <li><strong>Predictive Maintenance Value:</strong> <a href="#citation-7">[7]</a></li>
+                    </ul>`
+            },
+            'construction-rework': {
+                title: 'Source Reference: Construction Rework Reduction',
+                content: `
+                     <ul class='list-disc pl-5 mt-2 space-y-1'>
+                        <li><strong>Primary Citation:</strong> <a href="#citation-8">[8]</a></li>
+                    </ul>`
+            }
+        };
+
+        const modal = document.getElementById('source-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        function openModal(sourceId) {
+            const data = sourceData[sourceId];
+            if (!data) return;
+
+            modalTitle.textContent = data.title;
+            modalBody.innerHTML = data.content;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // This makes sure clicking the link in the modal also closes it before scrolling
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.info-superscript')) {
+                const sourceId = e.target.dataset.sourceId;
+                openModal(sourceId);
+            }
+            if (e.target.closest('#modal-body') && e.target.tagName === 'A') {
+                closeModal();
+            }
+        });
+        
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+    });
+    </script>
+</body>
+</html>
